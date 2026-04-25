@@ -4,7 +4,8 @@ import {
   AddTorrentRequestSchema,
   InfoHashSchema,
   RemoveTorrentRequestSchema,
-  SetFilePrioritySchema
+  SetFilePrioritySchema,
+  ToggleFilePauseSchema
 } from '../shared/schemas'
 import type { Result } from '../shared/types'
 import type { TorrentEngine } from './torrentEngine'
@@ -78,6 +79,17 @@ export function registerIpcHandlers(win: BrowserWindow, engine: TorrentEngine): 
       return ok(undefined)
     } catch (e) {
       return err('PRIORITY_FAILED', String(e))
+    }
+  })
+
+  ipcMain.handle(IPC.ToggleFilePause, async (_e, raw) => {
+    const parsed = ToggleFilePauseSchema.safeParse(raw)
+    if (!parsed.success) return err('VALIDATION', parsed.error.message)
+    try {
+      engine.toggleFilePause(parsed.data.infoHash, parsed.data.fileIndex)
+      return ok(undefined)
+    } catch (e) {
+      return err('FILE_PAUSE_FAILED', String(e))
     }
   })
 

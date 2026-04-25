@@ -78,6 +78,8 @@ export class TorrentEngine extends EventEmitter {
   private readonly savePaths = new Map<string, string>()
   private readonly addedAt = new Map<string, number>()
   private readonly filePriorities = new Map<string, FilePriority>()
+  // Tracks temporarily paused individual files (key: `${infoHash}:${fileIndex}`)
+  private readonly filePaused = new Set<string>()
 
   constructor(private readonly deps: EngineDeps) {
     super()
@@ -137,6 +139,9 @@ export class TorrentEngine extends EventEmitter {
     for (const key of this.filePriorities.keys()) {
       if (key.startsWith(`${infoHash}:`)) this.filePriorities.delete(key)
     }
+    for (const key of this.filePaused) {
+      if (key.startsWith(`${infoHash}:`)) this.filePaused.delete(key)
+    }
   }
 
   pause(infoHash: string): void {
@@ -161,9 +166,31 @@ export class TorrentEngine extends EventEmitter {
     if (!torrent) throw new Error(`torrent ${infoHash} not found`)
     const file = torrent.files[fileIndex]
     if (!file) throw new Error(`file index ${fileIndex} out of range`)
-    this.filePriorities.set(`${infoHash}:${fileIndex}`, priority)
+    const key = `${infoHash}:${fileIndex}`
+    this.filePriorities.set(key, priority)
+    // Respect file-pause state: only select if not paused and not skipped
     if (priority === 'skip') file.deselect()
-    else file.select()
+    else if (!this.filePaused.has(key)) file.select()
+  }
+
+  toggleFilePause(infoHash: string, fileIndex: number): void {
+    const torrent = this.torrentMap.get(infoHash)
+    if (!torrent) throw new Error(`torrent ${infoHash} not found`)
+    const file = torrent.files[fileIndex]
+    if (!file) throw new Error(`file index ${fileIndex} out of range`)
+
+    const key = `${infoHash}:${fileIndex}`
+    const priority = this.filePriorities.get(key) ?? 'normal'
+
+    if (this.filePaused.has(key)) {
+      // Resume: clear pause flag, re-select unless priority is skip
+      this.filePaused.delete(key)
+      if (priority !== 'skip') file.select()
+    } else {
+      // Pause: set flag and deselect
+      this.filePaused.add(key)
+      file.deselect()
+    }
   }
 
   list(): ReadonlyArray<TorrentState> {
@@ -192,13 +219,17 @@ export class TorrentEngine extends EventEmitter {
           ? 'downloading'
           : 'metadata'
 
-    const files: TorrentFile[] = t.files.map((f, i) => ({
-      name: f.name,
-      path: f.path,
-      length: f.length,
-      progress: f.progress,
-      priority: this.filePriorities.get(`${t.infoHash}:${i}`) ?? 'normal'
-    }))
+    const files: TorrentFile[] = t.files.map((f, i) => {
+      const key = `${t.infoHash}:${i}`
+      return {
+        name: f.name,
+        path: f.path,
+        length: f.length,
+        progress: f.progress,
+        priority: this.filePriorities.get(key) ?? 'normal',
+        filePaused: this.filePaused.has(key)
+      }
+    })
 
     return {
       infoHash: t.infoHash,

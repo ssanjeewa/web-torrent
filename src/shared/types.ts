@@ -15,6 +15,7 @@ export interface TorrentFile {
   readonly length: number
   readonly progress: number
   readonly priority: FilePriority
+  readonly filePaused: boolean   // independent of priority — temporary per-file pause
 }
 
 export interface TorrentState {
@@ -52,6 +53,11 @@ export interface SetFilePriorityRequest {
   readonly infoHash: string
   readonly fileIndex: number
   readonly priority: FilePriority
+}
+
+export interface ToggleFilePauseRequest {
+  readonly infoHash: string
+  readonly fileIndex: number
 }
 
 export interface RemoveTorrentRequest {
@@ -100,6 +106,7 @@ export interface TorrentAPI {
   chooseSavePath: () => Promise<Result<ChooseSavePathResponse>>
   openSavePath: (infoHash: string) => Promise<Result<void>>
   setFilePriority: (req: SetFilePriorityRequest) => Promise<Result<void>>
+  toggleFilePause: (req: ToggleFilePauseRequest) => Promise<Result<void>>
   onProgress: (cb: (b: ProgressBroadcast) => void) => () => void
   onDone: (cb: (b: TorrentDoneBroadcast) => void) => () => void
   onError: (cb: (b: TorrentErrorBroadcast) => void) => () => void

@@ -33,3 +33,8 @@ export const SetFilePrioritySchema = z.object({
   fileIndex: z.number().int().min(0),
   priority: z.enum(['high', 'normal', 'skip'])
 })
+
+export const ToggleFilePauseSchema = z.object({
+  infoHash: InfoHashSchema,
+  fileIndex: z.number().int().min(0)
+})

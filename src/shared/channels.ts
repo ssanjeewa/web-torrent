@@ -8,6 +8,7 @@ export const IPC = {
   ChoosePath: 'dialog:choose-save-path',
   OpenPath: 'shell:open-save-path',
   SetFilePriority: 'torrent:set-file-priority',
+  ToggleFilePause: 'torrent:toggle-file-pause',
 
   // Main -> Renderer (send/on)
   Progress: 'torrent:progress',

@@ -23,6 +23,7 @@ const api: TorrentAPI = {
   chooseSavePath: () => ipcRenderer.invoke(IPC.ChoosePath),
   openSavePath: (h) => ipcRenderer.invoke(IPC.OpenPath, h),
   setFilePriority: (req) => ipcRenderer.invoke(IPC.SetFilePriority, req),
+  toggleFilePause: (req) => ipcRenderer.invoke(IPC.ToggleFilePause, req),
   onProgress: (cb) => subscribe<ProgressBroadcast>(IPC.Progress, cb),
   onDone: (cb) => subscribe<TorrentDoneBroadcast>(IPC.Done, cb),
   onError: (cb) => subscribe<TorrentErrorBroadcast>(IPC.Error, cb)
