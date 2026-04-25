@@ -34,7 +34,7 @@ type WebTorrentFile = {
   path: string
   length: number
   progress: number
-  select: () => void
+  select: (priority?: number) => void  // higher number = downloaded first
   deselect: () => void
 }
 
@@ -68,6 +68,10 @@ type WebTorrentTorrent = {
 }
 
 const TICK_MS = 1000
+
+// Map our priority labels to WebTorrent numeric piece-selection priorities.
+// torrent._selections is sorted by priority descending: higher = downloaded first.
+const PIECE_PRIORITY: Record<string, number> = { high: 10, normal: 1 }
 
 export class TorrentEngine extends EventEmitter {
   private client: WebTorrentInstance | null = null
@@ -170,7 +174,7 @@ export class TorrentEngine extends EventEmitter {
     this.filePriorities.set(key, priority)
     // Respect file-pause state: only select if not paused and not skipped
     if (priority === 'skip') file.deselect()
-    else if (!this.filePaused.has(key)) file.select()
+    else if (!this.filePaused.has(key)) file.select(PIECE_PRIORITY[priority])
   }
 
   toggleFilePause(infoHash: string, fileIndex: number): void {
@@ -183,9 +187,9 @@ export class TorrentEngine extends EventEmitter {
     const priority = this.filePriorities.get(key) ?? 'normal'
 
     if (this.filePaused.has(key)) {
-      // Resume: clear pause flag, re-select unless priority is skip
+      // Resume: clear pause flag, re-select with correct priority
       this.filePaused.delete(key)
-      if (priority !== 'skip') file.select()
+      if (priority !== 'skip') file.select(PIECE_PRIORITY[priority] ?? 1)
     } else {
       // Pause: set flag and deselect
       this.filePaused.add(key)
