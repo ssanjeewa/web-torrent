@@ -1,0 +1,25 @@
+appId: com.webtorrent.desktop
+productName: WebTorrent Desktop
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**/*
+  - "!node_modules/**/*"
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  category: public.app-category.utilities
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Network
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
